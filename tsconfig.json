@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "target": "esnext",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "noUnusedLocals": true,
+        "sourceMap": true,
+        "declaration": true,
+        "declarationDir": "./dist/",
+        "outDir": "./dist/",
+        "allowSyntheticDefaultImports": true
+    },
+    "files": ["lib/index.ts", "tests/index.test.ts"]
+}
