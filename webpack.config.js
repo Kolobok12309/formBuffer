@@ -20,7 +20,10 @@ let config = {
     },
     devtool: 'inline-source-map',
     resolve: {
-        extensions: [".ts", ".js"]
+        extensions: [".ts", ".js"],
+        alias: {
+            '@': path.resolve(__dirname, './lib'),
+        },
     },
     devServer: {
         contentBase: path.resolve(__dirname, 'dist'),

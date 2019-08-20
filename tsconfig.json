@@ -9,7 +9,8 @@
         "declaration": true,
         "declarationDir": "./dist/",
         "outDir": "./dist/",
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "noImplicitThis": true
     },
     "files": ["lib/index.ts", "tests/index.test.ts"]
 }
