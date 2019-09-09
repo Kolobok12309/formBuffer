@@ -1,5 +1,7 @@
 import { KnownKeys } from './index';
+
 import { TypeModificatorOptions } from '../defaultModificators/typeModificator';
+import { DeepModificatorOptions } from '../defaultModificators/deepModificator';
 
 import { ModificatorDefaultFormater, ModificatorInFormater, ModificatorOutFormater } from './formaters';
 
@@ -8,7 +10,7 @@ interface ModificatorsSchema {
 }
 
 export interface Modificators extends ModificatorsSchema {
-    deep: boolean;
+    deep: DeepModificatorOptions;
     autoclean: boolean;
     type: TypeModificatorOptions;
     default: any | (() => any);
