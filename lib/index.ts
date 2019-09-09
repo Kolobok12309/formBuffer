@@ -1,13 +1,6 @@
-import { Modificators, FormBufferOptions } from './types';
 import { ModificatorBuilder } from './modificators';
+import FormBuffer, { FormBufferExtended } from './formBuffer';
 
-export { ModificatorBuilder };
+export { ModificatorBuilder, FormBufferExtended };
 
-export default class FormBuffer<P = any, M extends Modificators = Modificators> {
-    constructor(options: FormBufferOptions<P, M>) {
-
-    }
-}
-
-export type FormBufferExtended<P = any, M extends Modificators = Modificators> = FormBuffer<P, M>;
-
+export default FormBuffer;

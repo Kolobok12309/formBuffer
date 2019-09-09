@@ -1,5 +1,5 @@
-import { KnownKeys, FormBufferOptions } from './index';
-import FormBuffer from '../index';
+import { KnownKeys } from './index';
+import { TypeModificatorOptions } from '../defaultModificators/typeModificator';
 
 import { ModificatorDefaultFormater, ModificatorInFormater, ModificatorOutFormater } from './formaters';
 
@@ -7,22 +7,10 @@ interface ModificatorsSchema {
     [k: string]: any;
 }
 
-export type TypeModificatorLowOptions =
-    NumberConstructor |
-    StringConstructor |
-    ArrayConstructor |
-    ObjectConstructor |
-    BooleanConstructor;
-
-export type TypeModificatorBigOptions = {
-    type: TypeModificatorLowOptions | typeof FormBuffer;
-    options?: FormBufferOptions;
-};
-
 export interface Modificators extends ModificatorsSchema {
     deep: boolean;
     autoclean: boolean;
-    type: TypeModificatorBigOptions | TypeModificatorLowOptions;
+    type: TypeModificatorOptions;
     default: any | (() => any);
 }
 

@@ -1,50 +1,137 @@
-import { TypeModificatorLowOptions, TypeModificatorBigOptions, FormBufferOptions } from './../types';
-import { ModificatorBuilder } from './../modificators';
+import { FormBufferOptions } from './../types';
+import { IModificator, Modificators } from './../types/modificators';
 
-import FormBuffer from './../index';
+import FormBuffer, { FormBufferExtended } from './../formBuffer';
 
-const builder = new ModificatorBuilder('type', false);
+export type TypeModificatorLowOptions =
+    NumberConstructor |
+    StringConstructor |
+    ArrayConstructor |
+    ObjectConstructor |
+    BooleanConstructor;
 
-type mergedOptions = TypeModificatorLowOptions | typeof FormBuffer;
+export type TypeModificatorBigOptions = {
+    type: TypeModificatorLowOptions | typeof FormBuffer;
+    options?: FormBufferOptions;
+};
 
-const types: mergedOptions[] = [Number, String, Array, Object, Boolean, FormBuffer];
+export type TypeModificatorOptions = TypeModificatorLowOptions | TypeModificatorBigOptions;
 
-function defaultByType(value: any, type: mergedOptions, options?: FormBufferOptions) {
-    switch (type) {
-    case String:
-    default: return '';
-    case Number: return 0;
-    case Boolean: return false;
-    case Object: return {};
-    case Array: return [];
-    case FormBuffer:
-        if (value && value.clear && value.getFormData) {
-            value.clear();
-            return value.getFormData();
+export type TypeModificatorTypeFunction =
+    (value: any, options?: FormBufferOptions) => any;
+
+export interface TypeModificatorTypeObject {
+    type: any;
+    formater: TypeModificatorTypeFunction;
+}
+
+export const defaultTypes: TypeModificatorTypeObject[] = [
+    {
+        type: String,
+        formater: () => '',
+    },
+    {
+        type: Number,
+        formater: () => 0,
+    },
+    {
+        type: Boolean,
+        formater: () => false,
+    },
+    {
+        type: Object,
+        formater: () => ({}),
+    },
+    {
+        type: Array,
+        formater: () => [],
+    },
+    {
+        type: FormBuffer,
+        formater: (value, options) => {
+            if (value && value.clear) {
+                value.clear();
+                return value;
+            }
+            if (options) {
+                return new FormBuffer(options);
+            }
+            throw new Error('[TypeModificator] FormBuffer haven\'t config');
+        },
+    },
+];
+
+export class TypeModificator<M extends Modificators = Modificators> implements IModificator<Modificators> {
+    name: 'type';
+    canBeGlobal: false;
+    formaters: Map<any, TypeModificatorTypeFunction>;
+
+    constructor(types?: TypeModificatorTypeObject[]) {
+        this.name = 'type';
+        this.canBeGlobal = false;
+
+        let nowTypes = types;
+
+        if (!nowTypes) {
+            nowTypes = defaultTypes;
         }
-        if (options) {
-            return new FormBuffer(options);
+
+        const map = new Map<any, TypeModificatorTypeFunction>();
+
+        this.formaters = map;
+
+        nowTypes.forEach(({ type, formater }) => {
+            this.addType({ type, formater });
+        });
+    }
+
+    addType(typeObject: TypeModificatorTypeObject) {
+        const { type, formater } = typeObject;
+
+        if (this.formaters.has(type)) throw new Error(`[TypeModificator] type "${type}" already exist`);
+        this.formaters.set(type, formater);
+    }
+
+    getTypeFormater(type: any) {
+        return this.formaters.get(type);
+    }
+
+    removeType(type: any) {
+        this.formaters.delete(type);
+    }
+
+    defaultFormater(value: any, options: TypeModificatorOptions, formBuffer: FormBuffer<M> | FormBufferExtended<M>) {
+        if (!options) throw new Error('[TypeModificator] type not supported');
+
+        const types = [];
+        for (const type of this.formaters.keys()) {
+            types.push(type);
         }
-        throw new Error('[TypeModificator] FormBuffer haven\'t config');
+
+        const isLowOptions = types.includes(options);
+
+        if (isLowOptions) {
+            const lowOptions = options as TypeModificatorLowOptions;
+            const formater = this.getTypeFormater(lowOptions);
+
+            if (!formater) throw new Error(`[TypeModificator] can't find formater for "${lowOptions}" type`);
+
+            return formater(value);
+        }
+        const isBigOptions = (options as TypeModificatorBigOptions).type &&
+            types.includes((options as TypeModificatorBigOptions).type);
+
+        if (isBigOptions) {
+            const bigOptions = options as TypeModificatorBigOptions;
+            const formater = this.getTypeFormater(bigOptions.type);
+
+            if (!formater) throw new Error(`[TypeModificator] can't find formater for "${bigOptions.type}" type`);
+
+            return formater(value, bigOptions.options);
+        }
+
+        throw new Error('[TypeModificator] type not supported');
     }
 }
 
-builder.addDefaultFormater((value, options, formBuffer) => {
-    if (!options) throw new Error('[TypeModificator] type not supported');
-    const isLowOptions = types.includes(options as mergedOptions);
-
-    if (isLowOptions) {
-        const lowOptions = options as TypeModificatorLowOptions;
-        return defaultByType(value, lowOptions);
-    }
-    const bigOptions = options as TypeModificatorBigOptions;
-    if (bigOptions.type) {
-        const isTypeSupported = types.includes(bigOptions.type);
-        if (!isTypeSupported) throw new Error('[TypeModificator] type not supported');
-
-        return defaultByType(value, bigOptions.type, bigOptions.options);
-    }
-    throw new Error('[TypeModificator] type not supported');
-});
-
-export default builder.build();
+export default new TypeModificator();

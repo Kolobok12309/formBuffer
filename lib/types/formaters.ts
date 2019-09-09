@@ -1,5 +1,5 @@
 import { Modificators, ModificatorsNames } from './index';
-import FormBuffer, { FormBufferExtended } from '../index';
+import FormBuffer, { FormBufferExtended } from '../formBuffer';
 
 type allOptions<M extends Modificators> = {
     [K in ModificatorsNames<M>]: M[K]

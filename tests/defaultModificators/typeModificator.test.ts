@@ -1,11 +1,9 @@
 import { FormBufferOptions } from './../../lib/types/index';
 import { assert } from 'chai';
-// import { spy } from 'sinon';
+import sinon from 'sinon';
 
 import typeModificator from '../../lib/defaultModificators/typeModificator';
 import FormBuffer from '../../lib';
-
-const { defaultFormater } = typeModificator;
 
 interface TestData {
     value?: any;
@@ -16,19 +14,21 @@ interface TestData {
 
 type TestArr = TestData[];
 
-
+afterEach(() => {
+    sinon.restore();
+});
 
 describe('typeModificator', () => {
     const buffer = new FormBuffer({ preset: { test: {} } });
     function testFormater(options: any, value?: any) {
-        if (!defaultFormater) throw new Error('Formater undefined');
-        return defaultFormater(value, options, buffer);
+        if (!typeModificator.defaultFormater) throw new Error('Formater undefined');
+        return typeModificator.defaultFormater(value, options, buffer);
     }
     it('Should have name default and global: false and formater', () => {
         assert.equal(typeModificator.name, 'type');
         assert.equal(typeModificator.canBeGlobal, false);
-        assert.exists(defaultFormater);
-        assert.isFunction(defaultFormater);
+        assert.exists(typeModificator.defaultFormater);
+        assert.isFunction(typeModificator.defaultFormater);
     });
     describe('defaultFormater', () => {
         describe('smartConfig', () => {
@@ -159,17 +159,28 @@ describe('typeModificator', () => {
                     },
                     test3: {
                         type: Number,
-                    }
-                }
+                    },
+                },
             };
 
-            // TODO after creating formbuffer do this test
             it('Should return new formbuffer', () => {
-                console.log(testConfig);
+                const clearFake = sinon.fake();
+
+                sinon.replace(FormBuffer.prototype, 'clear', clearFake);
+
+                const result = testFormater({ type: FormBuffer, options: testConfig });
+
+                assert.instanceOf(result, FormBuffer);
+                assert.isFalse(clearFake.calledOnce);
             });
 
-            it('Should return cleared data from forbBuffer', () => {
-                console.log(testConfig);
+            it('Should return cleared data from formBuffer', () => {
+                const clearFake = sinon.fake();
+
+                sinon.replace(FormBuffer.prototype, 'clear', clearFake);
+                testFormater(FormBuffer, new FormBuffer(testConfig));
+
+                assert.isTrue(clearFake.calledOnce);
             });
 
             it('Should throw error on unacceptable type', () => {
@@ -187,6 +198,29 @@ describe('typeModificator', () => {
                 const errorText = '[TypeModificator] FormBuffer haven\'t config';
 
                 assert.throws(() => testFormater({ type: FormBuffer }), errorText);
+            });
+        });
+        describe('changingTypes', () => {
+            const testType = 'testType';
+
+            it('addType', () => {
+                typeModificator.addType({
+                    type: testType,
+                    formater: () => testType,
+                });
+
+                const result = testFormater(testType);
+
+                assert.equal(testType, result);
+                assert.isOk(typeModificator.getTypeFormater(testType));
+            });
+            it('removeType', () => {
+                typeModificator.removeType(testType);
+
+                assert.throws(() => {
+                    testFormater(testType)
+                },            '[TypeModificator] type not supported');
+                assert.isUndefined(typeModificator.getTypeFormater(testType));
             });
         });
     });
