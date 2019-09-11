@@ -13,18 +13,18 @@ const copyFunction = (value: any) => {
     return JSON.parse(jsoned);
 };
 
-builder.addInFormater((oldValue, newValue, options) => {
+builder.addInFormater((oldValue, newValue, options, formBuffer, { skipSymbol }) => {
     if (options) {
         return copyFunction(newValue);
     }
 
-    return undefined;
-}).addOutFormater((value, options) => {
+    return skipSymbol;
+}).addOutFormater((value, options, formBuffer, { skipSymbol }) => {
     if (options) {
         return copyFunction(value);
     }
 
-    return undefined;
+    return skipSymbol;
 });
 
 export default builder.build();

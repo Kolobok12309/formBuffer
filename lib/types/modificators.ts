@@ -2,6 +2,8 @@ import { KnownKeys } from './index';
 
 import { TypeModificatorOptions } from '../defaultModificators/typeModificator';
 import { DeepModificatorOptions } from '../defaultModificators/deepModificator';
+import { AutocleanModificatorOptions } from '../defaultModificators/autocleanModificator';
+import { DefaultModificatorOptions } from '../defaultModificators/defaultModificator';
 
 import { ModificatorDefaultFormater, ModificatorInFormater, ModificatorOutFormater } from './formaters';
 
@@ -11,9 +13,9 @@ interface ModificatorsSchema {
 
 export interface Modificators extends ModificatorsSchema {
     deep: DeepModificatorOptions;
-    autoclean: boolean;
+    autoclean: AutocleanModificatorOptions;
     type: TypeModificatorOptions;
-    default: any | (() => any);
+    default: DefaultModificatorOptions;
 }
 
 export type PartialModificators<M extends Modificators = Modificators> = Partial<M>;

@@ -3,6 +3,7 @@ import { assert } from 'chai';
 import sinon from 'sinon';
 
 import typeModificator from '../../lib/defaultModificators/typeModificator';
+import formBufferSymbols from '../../lib/symbols';
 import FormBuffer from '../../lib';
 
 interface TestData {
@@ -21,8 +22,16 @@ afterEach(() => {
 describe('typeModificator', () => {
     const buffer = new FormBuffer({ preset: { test: {} } });
     function testFormater(options: any, value?: any) {
-        if (!typeModificator.defaultFormater) throw new Error('Formater undefined');
-        return typeModificator.defaultFormater(value, options, buffer);
+        if (!typeModificator.defaultFormater) throw new Error('defaultFormater undefined');
+        return typeModificator.defaultFormater(value, options, buffer, formBufferSymbols);
+    }
+    function testInFormater(oldValue: any, newValue: any, options: any) {
+        if (!typeModificator.inFormater) throw new Error('inFormater undefined');
+        return typeModificator.inFormater(oldValue, newValue, options, buffer, formBufferSymbols);
+    }
+    function testOutFormater(value: any, options: any) {
+        if (!typeModificator.outFormater) throw new Error('outFormater undefined');
+        return typeModificator.outFormater(value, options, buffer, formBufferSymbols);
     }
     it('Should have name default and global: false and formater', () => {
         assert.equal(typeModificator.name, 'type');
@@ -206,21 +215,84 @@ describe('typeModificator', () => {
             it('addType', () => {
                 typeModificator.addType({
                     type: testType,
-                    formater: () => testType,
+                    defaultFormater: () => testType,
                 });
 
                 const result = testFormater(testType);
 
                 assert.equal(testType, result);
-                assert.isOk(typeModificator.getTypeFormater(testType));
+                assert.isOk(typeModificator.getType(testType));
             });
             it('removeType', () => {
                 typeModificator.removeType(testType);
 
                 assert.throws(() => {
-                    testFormater(testType)
+                    testFormater(testType);
                 },            '[TypeModificator] type not supported');
-                assert.isUndefined(typeModificator.getTypeFormater(testType));
+                assert.isUndefined(typeModificator.getType(testType));
+            });
+        });
+    });
+    describe('inFormater', () => {
+        it('getSkipSymbol', () => {
+            const testVals = [String, Number, Boolean, Object, Array];
+
+            testVals.forEach((value) => {
+                const result = testInFormater(null, null, value);
+                assert.equal(result, formBufferSymbols.skipSymbol);
+            });
+        });
+        describe('formBuffer', () => {
+            it('runSetFunction', () => {
+                const inFake = sinon.fake();
+
+                sinon.replace(FormBuffer.prototype, 'setValues', inFake);
+                testInFormater(buffer, null, FormBuffer);
+
+                assert.isTrue(inFake.calledOnce);
+
+                testInFormater(buffer, null, FormBuffer);
+                assert.isTrue(inFake.calledTwice);
+            });
+
+            it('throw error without config', () => {
+                const errMsg = '[TypeModificator] FormBuffer haven\'t config';
+                assert.throws(() => {
+                    testInFormater(null, null, FormBuffer);
+                },            errMsg);
+            });
+        });
+    });
+    describe('outFormater', () => {
+        it('getSkipSymbol', () => {
+            const testVals = [String, Number, Boolean, Object, Array];
+
+            testVals.forEach((value) => {
+                const result = testOutFormater(buffer, value);
+                assert.equal(result, formBufferSymbols.skipSymbol);
+            });
+        });
+        describe('formBuffer', () => {
+            it('runFormatFunction', () => {
+                const outFake = sinon.fake();
+
+                sinon.replace(FormBuffer.prototype, 'getFormData', outFake);
+                testOutFormater(buffer, FormBuffer);
+
+                assert.isTrue(outFake.calledOnce);
+
+                testOutFormater(buffer, FormBuffer);
+                assert.isTrue(outFake.calledTwice);
+            });
+            it('throw Error when value is not FormBuffer', () => {
+                const errorMsg = '[TypeModificator] Value is not FormBuffer';
+                const testVals = [{}, '', Symbol(), false, null];
+
+                testVals.forEach((value) => {
+                    assert.throws(() => {
+                        testOutFormater(value, FormBuffer);
+                    },            errorMsg);
+                });
             });
         });
     });

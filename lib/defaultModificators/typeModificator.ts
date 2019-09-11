@@ -1,3 +1,4 @@
+import { SymbolsType } from './../symbols';
 import { FormBufferOptions } from './../types';
 import { IModificator, Modificators } from './../types/modificators';
 
@@ -17,39 +18,47 @@ export type TypeModificatorBigOptions = {
 
 export type TypeModificatorOptions = TypeModificatorLowOptions | TypeModificatorBigOptions;
 
-export type TypeModificatorTypeFunction =
+export type TypeModificatorDefaultTypeFunction =
+    (value: any, options?: FormBufferOptions) => any;
+
+export type TypeModificatorInTypeFunction =
+    (oldValue: any, newValue: any, options?: FormBufferOptions) => any;
+
+export type TypeModificatorOutTypeFunction =
     (value: any, options?: FormBufferOptions) => any;
 
 export interface TypeModificatorTypeObject {
     type: any;
-    formater: TypeModificatorTypeFunction;
+    defaultFormater: TypeModificatorDefaultTypeFunction;
+    inFormater?: TypeModificatorInTypeFunction;
+    outFormater?: TypeModificatorOutTypeFunction;
 }
 
 export const defaultTypes: TypeModificatorTypeObject[] = [
     {
         type: String,
-        formater: () => '',
+        defaultFormater: () => '',
     },
     {
         type: Number,
-        formater: () => 0,
+        defaultFormater: () => 0,
     },
     {
         type: Boolean,
-        formater: () => false,
+        defaultFormater: () => false,
     },
     {
         type: Object,
-        formater: () => ({}),
+        defaultFormater: () => ({}),
     },
     {
         type: Array,
-        formater: () => [],
+        defaultFormater: () => [],
     },
     {
         type: FormBuffer,
-        formater: (value, options) => {
-            if (value && value.clear) {
+        defaultFormater: (value, options) => {
+            if (value instanceof FormBuffer) {
                 value.clear();
                 return value;
             }
@@ -58,13 +67,27 @@ export const defaultTypes: TypeModificatorTypeObject[] = [
             }
             throw new Error('[TypeModificator] FormBuffer haven\'t config');
         },
+        inFormater: (oldValue, newValue, options) => {
+            let nowFormBuffer = oldValue as FormBuffer;
+            if (!nowFormBuffer) {
+                if (options) nowFormBuffer = new FormBuffer(options);
+                else throw new Error('[TypeModificator] FormBuffer haven\'t config');
+            }
+            nowFormBuffer.setValues(newValue);
+
+            return nowFormBuffer;
+        },
+        outFormater: (value, options) => {
+            if (value instanceof FormBuffer) return value.getFormData();
+            throw new Error('[TypeModificator] Value is not FormBuffer');
+        },
     },
 ];
 
 export class TypeModificator<M extends Modificators = Modificators> implements IModificator<Modificators> {
     name: 'type';
     canBeGlobal: false;
-    formaters: Map<any, TypeModificatorTypeFunction>;
+    types: Map<any, TypeModificatorTypeObject>;
 
     constructor(types?: TypeModificatorTypeObject[]) {
         this.name = 'type';
@@ -76,61 +99,86 @@ export class TypeModificator<M extends Modificators = Modificators> implements I
             nowTypes = defaultTypes;
         }
 
-        const map = new Map<any, TypeModificatorTypeFunction>();
+        const map = new Map<any, TypeModificatorTypeObject>();
 
-        this.formaters = map;
+        this.types = map;
 
-        nowTypes.forEach(({ type, formater }) => {
-            this.addType({ type, formater });
+        nowTypes.forEach((typeObject) => {
+            this.addType(typeObject);
         });
     }
 
     addType(typeObject: TypeModificatorTypeObject) {
-        const { type, formater } = typeObject;
+        const { type } = typeObject;
 
-        if (this.formaters.has(type)) throw new Error(`[TypeModificator] type "${type}" already exist`);
-        this.formaters.set(type, formater);
+        if (this.types.has(type)) throw new Error(`[TypeModificator] type "${type}" already exist`);
+        this.types.set(type, typeObject);
     }
 
-    getTypeFormater(type: any) {
-        return this.formaters.get(type);
+    getType(type: any) {
+        return this.types.get(type);
     }
 
     removeType(type: any) {
-        this.formaters.delete(type);
+        return this.types.delete(type);
     }
 
-    defaultFormater(value: any, options: TypeModificatorOptions, formBuffer: FormBuffer<M> | FormBufferExtended<M>) {
+    parseOptions(options: TypeModificatorOptions): TypeModificatorBigOptions {
         if (!options) throw new Error('[TypeModificator] type not supported');
 
         const types = [];
-        for (const type of this.formaters.keys()) {
+        for (const type of this.types.keys()) {
             types.push(type);
         }
 
         const isLowOptions = types.includes(options);
+        if (isLowOptions) return { type: options as TypeModificatorLowOptions };
 
-        if (isLowOptions) {
-            const lowOptions = options as TypeModificatorLowOptions;
-            const formater = this.getTypeFormater(lowOptions);
-
-            if (!formater) throw new Error(`[TypeModificator] can't find formater for "${lowOptions}" type`);
-
-            return formater(value);
-        }
         const isBigOptions = (options as TypeModificatorBigOptions).type &&
             types.includes((options as TypeModificatorBigOptions).type);
 
-        if (isBigOptions) {
-            const bigOptions = options as TypeModificatorBigOptions;
-            const formater = this.getTypeFormater(bigOptions.type);
-
-            if (!formater) throw new Error(`[TypeModificator] can't find formater for "${bigOptions.type}" type`);
-
-            return formater(value, bigOptions.options);
-        }
+        if (isBigOptions) return options as TypeModificatorBigOptions;
 
         throw new Error('[TypeModificator] type not supported');
+    }
+
+    defaultFormater(value: any, options: TypeModificatorOptions, formBuffer: FormBuffer<any, M> | FormBufferExtended<any, M>, symbols: SymbolsType) {
+        const parsedOptions = this.parseOptions(options);
+
+        const type = this.getType(parsedOptions.type);
+
+        if (!type) throw new Error(`[TypeModificator] can't find type "${parsedOptions.type}"`);
+        if (!type.defaultFormater) throw new Error(`[TypeModificator] can't find defaultFormater for "${parsedOptions.type}" type`);
+
+        return type.defaultFormater(value, parsedOptions.options);
+    }
+
+    inFormater(
+            oldValue: any,
+            newValue: any,
+            options: TypeModificatorOptions,
+            formBuffer: FormBuffer<any, M> | FormBufferExtended<any, M>,
+            symbols: SymbolsType,
+    ) {
+        const parsedOptions = this.parseOptions(options);
+
+        const type = this.getType(parsedOptions.type);
+
+        if (!type) throw new Error(`[TypeModificator] can't find type "${parsedOptions.type}"`);
+        if (!type.inFormater) return symbols.skipSymbol;
+
+        return type.inFormater(oldValue, newValue, parsedOptions.options);
+    }
+
+    outFormater(value: any, options: TypeModificatorOptions, formBuffer: FormBuffer<any, M> | FormBufferExtended<any, M>, symbols: SymbolsType) {
+        const parsedOptions = this.parseOptions(options);
+
+        const type = this.getType(parsedOptions.type);
+
+        if (!type) throw new Error(`[TypeModificator] can't find type "${parsedOptions.type}"`);
+        if (!type.outFormater) return symbols.skipSymbol;
+
+        return type.outFormater(value, parsedOptions.options);
     }
 }
 

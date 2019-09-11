@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 
 import deepModificator from '../../lib/defaultModificators/deepModificator';
+import formBufferSymbols from '../../lib/symbols';
 import FormBuffer from '../../lib';
 
 const { inFormater, outFormater } = deepModificator;
@@ -9,11 +10,11 @@ describe('deepModificator', () => {
     const buffer = new FormBuffer({ preset: { test: {} } });
     function testInFormater(value: any) {
         if (!inFormater) throw new Error('inFormater undefined');
-        return inFormater(null, value, true, buffer);
+        return inFormater(null, value, true, buffer, formBufferSymbols);
     }
     function testOutFormater(value: any) {
         if (!outFormater) throw new Error('outFormater undefined');
-        return outFormater(value, true, buffer);
+        return outFormater(value, true, buffer, formBufferSymbols);
     }
     it('Should have name default and global: false and formater', () => {
         assert.equal(deepModificator.name, 'deep');

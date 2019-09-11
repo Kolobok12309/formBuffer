@@ -1,5 +1,4 @@
-import defaultModificator from './defaultModificator';
-
-export {
-    defaultModificator,
-};
+export * from './autocleanModificator';
+export * from './defaultModificator';
+export * from './deepModificator';
+export * from './typeModificator';

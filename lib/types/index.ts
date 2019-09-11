@@ -12,14 +12,17 @@ export interface FormBufferOptions<P = any, M extends Modificators = Modificator
     preset: {
         [K in keyof P]: PartialModificators<M>;
     };
-    config?: PartialModificators<M>;
+    global?: PartialModificators<M>;
+
     inFormaters?: {
         [K in keyof P]?: inFormater<P[K], M>;
     };
     outFormaters?: {
         [K in keyof P]?: outFormater<P[K], M>;
     };
-    defaultFormater?: {
+    defaultFormaters?: {
         [K in keyof P]?: defaultFormater<P[K], M>;
     };
 }
+
+export type FormBufferInsideOptions<P = any, M extends Modificators = Modificators> = Required<FormBufferOptions<P, M>>;

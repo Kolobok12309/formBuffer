@@ -2,6 +2,7 @@ import { assert } from 'chai';
 import { fake } from 'sinon';
 
 import defaultModificator from '../../lib/defaultModificators/defaultModificator';
+import formBufferSymbols from '../../lib/symbols';
 import FormBuffer from '../../lib';
 
 const { defaultFormater } = defaultModificator;
@@ -10,7 +11,7 @@ describe('defaultModificator', () => {
     const buffer = new FormBuffer({ preset: { test: {} } });
     function testFormater(value: any) {
         if (!defaultFormater) throw new Error('Formater undefined');
-        return defaultFormater(null, value, buffer);
+        return defaultFormater(null, value, buffer, formBufferSymbols);
     }
     it('Should have name default and global: false and formater', () => {
         assert.equal(defaultModificator.name, 'default');
