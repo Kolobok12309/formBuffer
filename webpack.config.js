@@ -1,6 +1,8 @@
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
 
 const babelOptions = {
 
@@ -58,6 +60,7 @@ let config = {
         ]
     },
     plugins: isProd ? [
+        new BundleAnalyzerPlugin(),
         new CleanWebpackPlugin(),
     ] : [
         new HtmlWebpackPlugin()
