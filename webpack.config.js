@@ -60,7 +60,7 @@ let config = {
         ]
     },
     plugins: isProd ? [
-        new BundleAnalyzerPlugin(),
+        // new BundleAnalyzerPlugin(),
         new CleanWebpackPlugin(),
     ] : [
         new HtmlWebpackPlugin()
