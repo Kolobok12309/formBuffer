@@ -15,7 +15,7 @@ let config = {
     mode: isProd ? 'production' : 'development',
     entry: './lib/index.ts',
     output: {
-        filename: 'formBuffer.js',
+        filename: 'formBuffer.umd.js',
         path: path.resolve(__dirname, 'dist'),
         library: 'FormBuffer',
         libraryTarget: 'umd',

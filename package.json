@@ -2,11 +2,12 @@
     "name": "form-buffer",
     "version": "1.0.0",
     "description": "Help class for wotking with forms in web",
-    "main": "build/cjs/index.js",
-    "module": "build/esm/index.js",
-    "typings": "build/esm/index.d.ts",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "typings": "dist/index.d.ts",
+    "unpkg": "dist/formBuffer.umd.js",
     "scripts": {
-        "build": "cross-env NODE_ENV=production webpack",
+        "build": "cross-env NODE_ENV=production webpack && tsc",
         "dev": "cross-env NODE_ENV=development webpack-dev-server",
         "test": "cross-env NODE_ENV=test mochapack --glob '*.test.ts' tests --recursive"
     },

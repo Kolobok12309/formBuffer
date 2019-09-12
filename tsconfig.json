@@ -5,12 +5,12 @@
         "module": "esnext",
         "moduleResolution": "node",
         "noUnusedLocals": true,
-        "sourceMap": true,
+        "sourceMap": false,
         "declaration": true,
         "declarationDir": "./dist/",
         "outDir": "./dist/",
         "allowSyntheticDefaultImports": true,
         "noImplicitThis": true
     },
-    "files": ["lib/index.ts", "tests/index.test.ts"]
+    "files": ["lib/index.ts"]
 }
