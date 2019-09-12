@@ -1,6 +1,6 @@
 {
     "name": "form-buffer",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "Help class for wotking with forms in web",
     "main": "build/cjs/index.js",
     "module": "build/esm/index.js",
