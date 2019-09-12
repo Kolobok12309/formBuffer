@@ -33,20 +33,24 @@ export default class FormBuffer<P = any, M extends Modificators = Modificators> 
         return buffer as FormBufferExtended<P, M>;
     }
 
+    static get modificators() {
+        return modificators;
+    }
+
     static addModificator<M extends Modificators = Modificators>(modificator: IModificator<M>) {
         modificators.set(modificator.name, modificator);
     }
 
-    static delModificator(modificatorName: string) {
-        modificators.delete(modificatorName);
+    static delModificator(modificatorName: string): boolean {
+        return modificators.delete(modificatorName);
     }
 
     static getModificator<M extends Modificators = Modificators>(modificatorName: string): IModificator<M> | undefined {
         return modificators.get(modificatorName);
     }
 
-    setValues(data: P | null | undefined) {
-        if (data && typeof data === 'object') {
+    setValues(data: any) {
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
             const options = this[optionsSymbol];
 
             for (const key in options.preset) {
@@ -55,11 +59,14 @@ export default class FormBuffer<P = any, M extends Modificators = Modificators> 
                 let value = data[key];
                 const oldValue = (this as any)[key];
 
-                const formater = options.inFormaters[key];
                 if (key in data) {
+                    const formater = options.inFormaters[key];
+                    let formaterResult: any;
                     if (formater) {
-                        value = formater(oldValue, value, this, formBufferSymbols);
-                    } else {
+                        formaterResult = formater(oldValue, value, this, formBufferSymbols);
+                        if (formaterResult !== skipSymbol) value = formaterResult;
+                    }
+                    if (!formater || formaterResult === skipSymbol) {
                         const modificatorsAndOptions = this._getModificatorsForProp(key);
 
                         for (const { modificator, options } of modificatorsAndOptions.values()) {
@@ -88,9 +95,12 @@ export default class FormBuffer<P = any, M extends Modificators = Modificators> 
             let value = (this as any)[key];
 
             const formater = options.outFormaters[key];
+            let formaterResult: any;
             if (formater) {
-                value = formater(value, this, formBufferSymbols);
-            } else {
+                formaterResult = formater(value, this, formBufferSymbols);
+                if (formaterResult !== skipSymbol) value = formaterResult;
+            }
+            if (!formater || formaterResult === skipSymbol) {
                 const modificatorsAndOptions = this._getModificatorsForProp(key);
 
                 for (const { modificator, options } of modificatorsAndOptions.values()) {
@@ -117,7 +127,7 @@ export default class FormBuffer<P = any, M extends Modificators = Modificators> 
         const globalModificators = Object.keys(options.global).map(name => ({ name, isGlobal: true }));
         const propModificators = Object.keys(options.preset[propKey]).map(name => ({ name, isGlobal: false }));
 
-        [...globalModificators, ...propModificators].forEach(({ name, isGlobal }) => {
+        [...propModificators, ...globalModificators].forEach(({ name, isGlobal }) => {
             if (result.has(name)) return;
             const modificator = FormBuffer.getModificator<M>(name);
             if (!modificator) throw new Error(`[FormBuffer] Modificator with name "${name}" does not exist`);
@@ -139,13 +149,16 @@ export default class FormBuffer<P = any, M extends Modificators = Modificators> 
     clearProperty(key: Extract<keyof P, string>): ValueOfPreset<P> {
         const options = this[optionsSymbol];
 
-        let value: ValueOfPreset<P> | undefined = undefined;
+        let value: any = undefined;
         const oldValue = (this as any)[key];
 
         const defaultFormater = options.defaultFormaters[key];
+        let formaterResult: any;
         if (defaultFormater) {
-            value = defaultFormater(oldValue, this, formBufferSymbols);
-        } else {
+            formaterResult = defaultFormater(oldValue, this, formBufferSymbols);
+            if (formaterResult !== skipSymbol) value = formaterResult;
+        }
+        if (!defaultFormater || formaterResult === skipSymbol) {
             const modificatorsAndOptions = this._getModificatorsForProp(key);
 
             for (const { modificator, options } of modificatorsAndOptions.values()) {
