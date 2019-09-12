@@ -86,12 +86,10 @@ export const defaultTypes: TypeModificatorTypeObject[] = [
 
 export class TypeModificator<M extends Modificators = Modificators> implements IModificator<Modificators> {
     name: 'type';
-    canBeGlobal: false;
     types: Map<any, TypeModificatorTypeObject>;
 
     constructor(types?: TypeModificatorTypeObject[]) {
         this.name = 'type';
-        this.canBeGlobal = false;
 
         let nowTypes = types;
 
@@ -117,6 +115,10 @@ export class TypeModificator<M extends Modificators = Modificators> implements I
 
     getType(type: any) {
         return this.types.get(type);
+    }
+
+    hasType(type: any): boolean {
+        return this.types.has(type);
     }
 
     removeType(type: any) {
@@ -182,4 +184,6 @@ export class TypeModificator<M extends Modificators = Modificators> implements I
     }
 }
 
-export default new TypeModificator();
+export const typeModificator = new TypeModificator();
+
+export default typeModificator;

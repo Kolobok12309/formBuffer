@@ -2,7 +2,7 @@ import { ModificatorBuilder } from './../modificators';
 
 export type DeepModificatorOptions = boolean;
 
-const builder = new ModificatorBuilder('deep', true);
+const builder = new ModificatorBuilder('deep');
 
 const copyFunction = (value: any) => {
     const type = typeof value;
@@ -27,4 +27,6 @@ builder.addInFormater((oldValue, newValue, options, formBuffer, { skipSymbol }) 
     return skipSymbol;
 });
 
-export default builder.build();
+export const deepModificator = builder.build();
+
+export default deepModificator;

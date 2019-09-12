@@ -7,7 +7,7 @@ import FormBuffer from '../../lib';
 const { inFormater, outFormater } = deepModificator;
 
 describe('deepModificator', () => {
-    const buffer = new FormBuffer({ preset: { test: {} } });
+    const buffer = new FormBuffer({ preset: { test: { type: String } } });
     function testInFormater(value: any) {
         if (!inFormater) throw new Error('inFormater undefined');
         return inFormater(null, value, true, buffer, formBufferSymbols);
@@ -16,9 +16,8 @@ describe('deepModificator', () => {
         if (!outFormater) throw new Error('outFormater undefined');
         return outFormater(value, true, buffer, formBufferSymbols);
     }
-    it('Should have name default and global: false and formater', () => {
+    it('Should have name default and formater', () => {
         assert.equal(deepModificator.name, 'deep');
-        assert.isTrue(deepModificator.canBeGlobal);
         assert.exists(inFormater);
         assert.exists(outFormater);
         assert.isFunction(inFormater);

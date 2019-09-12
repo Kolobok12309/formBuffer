@@ -2,7 +2,7 @@ import { ModificatorBuilder } from './../modificators';
 
 export type AutocleanModificatorOptions = boolean;
 
-const builder = new ModificatorBuilder('autoclean', true);
+const builder = new ModificatorBuilder('autoclean');
 
 builder.addOutFormater((value, options, formBuffer, { delSymbol }) => {
     if (options && value) return value;
@@ -10,4 +10,6 @@ builder.addOutFormater((value, options, formBuffer, { delSymbol }) => {
     return delSymbol;
 });
 
-export default builder.build();
+export const autocleanModificator = builder.build();
+
+export default autocleanModificator;

@@ -1,26 +1,25 @@
 import { assert } from 'chai';
 
-import autocleanModificator from './../../lib/defaultModificators/autocleanModificator';
+import autocleanModificator from '../../lib/defaultModificators/autocleanModificator';
 import formBufferSymbols from '../../lib/symbols';
 import FormBuffer from '../../lib';
 
 const { outFormater } = autocleanModificator;
 
 describe('autocleanModificator', () => {
-    const buffer = new FormBuffer({ preset: { test: {} } });
+    const buffer = new FormBuffer({ preset: { test: { type: String } } });
     function testFormater(value: any) {
         if (!outFormater) throw new Error('Formater undefined');
-        return outFormater(null, value, buffer, formBufferSymbols);
+        return outFormater(value, true, buffer, formBufferSymbols);
     }
-    it('Should have name autoclean and global: true and formater', () => {
+    it('Should have name autoclean and formater', () => {
         assert.equal(autocleanModificator.name, 'autoclean');
-        assert.isTrue(autocleanModificator.canBeGlobal);
         assert.exists(outFormater);
         assert.isFunction(outFormater);
     });
     describe('outFormater', () => {
         it('should return delSymbol', () => {
-            const testVals = ['', null, undefined, [], {}, NaN, 0];
+            const testVals = ['', null, undefined, NaN, 0];
 
             testVals.forEach((value) => {
                 const result = testFormater(value);

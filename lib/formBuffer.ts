@@ -1,12 +1,11 @@
-import { IModificator, ModificatorsNames, PartialModificators } from './types/modificators';
-import { Modificators, FormBufferOptions, FormBufferInsideOptions, inFormater, ValueOfPreset, TypedModificatorOptions } from './types';
+import { Modificators, FormBufferOptions, FormBufferInsideOptions, ValueOfPreset, TypedModificatorOptions, IModificator } from './types';
 
 import formBufferSymbols, { optionsSymbol, skipSymbol, delSymbol } from './symbols';
 
-import defaultModificator from './defaultModificators/defaultModificator';
-import deepModificator from './defaultModificators/deepModificator';
-import autocleanModificator from './defaultModificators/autocleanModificator';
-import typeModificator from './defaultModificators/typeModificator';
+interface ModifAndOptions<M extends Modificators = Modificators> {
+    modificator: IModificator<M>;
+    options: TypedModificatorOptions<M>;
+}
 
 function fixOptions<P, M extends Modificators>(options: FormBufferOptions<P, M>): FormBufferInsideOptions<P, M> {
     if (!options.defaultFormaters) options.defaultFormaters = {};
@@ -17,12 +16,7 @@ function fixOptions<P, M extends Modificators>(options: FormBufferOptions<P, M>)
     return options as FormBufferInsideOptions<P, M>;
 }
 
-const modificators: Map<string, IModificator<any, any>> = new Map([
-    defaultModificator,
-    deepModificator,
-    autocleanModificator,
-    typeModificator,
-].map(modif => [modif.name, modif]));
+const modificators: Map<string, IModificator<any, any>> = new Map();
 
 export default class FormBuffer<P = any, M extends Modificators = Modificators> {
     [optionsSymbol]: FormBufferInsideOptions<P, M>;
@@ -55,11 +49,6 @@ export default class FormBuffer<P = any, M extends Modificators = Modificators> 
         if (data && typeof data === 'object') {
             const options = this[optionsSymbol];
 
-            // const dataKeys = Object.keys(data);
-            // const presetKeys = Object.keys(options.preset);
-
-            // const allKeysSet = new Set([...dataKeys, ...presetKeys]);
-
             for (const key in options.preset) {
                 if (key in FormBuffer.prototype) throw new Error(`[FormBuffer] Property name cannot have "${key}" value because it reserved`);
 
@@ -71,31 +60,16 @@ export default class FormBuffer<P = any, M extends Modificators = Modificators> 
                     if (formater) {
                         value = formater(oldValue, value, this, formBufferSymbols);
                     } else {
-                        const getResultFromModificator = (modificatorName: string, isGlobal?: boolean) => {
-                            const modificator = FormBuffer.getModificator<M>(modificatorName);
-                            const modificatorOptions = options.preset[key][modificatorName] as TypedModificatorOptions<M>;
+                        const modificatorsAndOptions = this._getModificatorsForProp(key);
 
-                            if (!modificator || !modificator.inFormater || !modificatorOptions) return skipSymbol;
-                            if (isGlobal && !modificator.canBeGlobal) throw new Error(`[FormBuffer] modificator ${modificatorName} cannot be global`);
+                        for (const { modificator, options } of modificatorsAndOptions.values()) {
+                            if (!modificator.inFormater) continue;
 
-                            return modificator.inFormater(oldValue, value, modificatorOptions, this, formBufferSymbols);
-                        };
-
-                        for (const modificatorName in options.preset[key]) {
-                            const resultFromModificator = getResultFromModificator(modificatorName);
+                            const resultFromModificator = modificator.inFormater(oldValue, value, options, this, formBufferSymbols);
                             if (resultFromModificator === skipSymbol) continue;
-                            else {
-                                value = resultFromModificator;
-                                break;
-                            }
-                        }
-                        for (const modificatorName in options.global) {
-                            const resultFromModificator = getResultFromModificator(modificatorName, true);
-                            if (resultFromModificator === skipSymbol) continue;
-                            else {
-                                value = resultFromModificator;
-                                break;
-                            }
+
+                            value = resultFromModificator;
+                            break;
                         }
                     }
                 } else value = this.clearProperty(key);
@@ -106,17 +80,88 @@ export default class FormBuffer<P = any, M extends Modificators = Modificators> 
         } else this.clear();
     }
 
-    getFormData() {
+    getFormData(): P {
+        const options = this[optionsSymbol];
+        const result = {};
 
+        for (const key in options.preset) {
+            let value = (this as any)[key];
+
+            const formater = options.outFormaters[key];
+            if (formater) {
+                value = formater(value, this, formBufferSymbols);
+            } else {
+                const modificatorsAndOptions = this._getModificatorsForProp(key);
+
+                for (const { modificator, options } of modificatorsAndOptions.values()) {
+                    if (!modificator.outFormater) continue;
+
+                    const resultFromModificator = modificator.outFormater(value, options, this, formBufferSymbols);
+                    if (resultFromModificator === skipSymbol) continue;
+
+                    value = resultFromModificator;
+                    break;
+                }
+            }
+
+            if (value !== delSymbol) (result as P)[key] = value;
+        }
+
+        return result as P;
+    }
+
+    private _getModificatorsForProp(propKey: Extract<keyof P, string>): Map<string, ModifAndOptions<M>> {
+        const result = new Map<string, ModifAndOptions<M>>();
+        const options = this[optionsSymbol];
+
+        const globalModificators = Object.keys(options.global).map(name => ({ name, isGlobal: true }));
+        const propModificators = Object.keys(options.preset[propKey]).map(name => ({ name, isGlobal: false }));
+
+        [...globalModificators, ...propModificators].forEach(({ name, isGlobal }) => {
+            if (result.has(name)) return;
+            const modificator = FormBuffer.getModificator<M>(name);
+            if (!modificator) throw new Error(`[FormBuffer] Modificator with name "${name}" does not exist`);
+
+            const modifOptions = isGlobal ? options.global[name] : options.preset[propKey][name];
+
+            result.set(name, { modificator, options: modifOptions as TypedModificatorOptions<M> });
+        });
+
+        return result;
     }
 
     clear() {
-
+        for (const key in this[optionsSymbol].preset) {
+            (this as any)[key] = this.clearProperty(key);
+        }
     }
 
-    clearProperty(key: keyof P): ValueOfPreset<P> {
-        let value: ValueOfPreset<P>;
+    clearProperty(key: Extract<keyof P, string>): ValueOfPreset<P> {
+        const options = this[optionsSymbol];
 
+        let value: ValueOfPreset<P> | undefined = undefined;
+        const oldValue = (this as any)[key];
+
+        const defaultFormater = options.defaultFormaters[key];
+        if (defaultFormater) {
+            value = defaultFormater(oldValue, this, formBufferSymbols);
+        } else {
+            const modificatorsAndOptions = this._getModificatorsForProp(key);
+
+            for (const { modificator, options } of modificatorsAndOptions.values()) {
+                if (!modificator.defaultFormater) continue;
+
+                const resultFromModificator = modificator.defaultFormater(oldValue, options, this, formBufferSymbols);
+                if (resultFromModificator === skipSymbol) continue;
+
+                value = resultFromModificator;
+                break;
+            }
+        }
+
+        if (value === undefined) throw new Error(`[FormBuffer] prop "${key}" haven't default value`);
+
+        return value;
     }
 }
 

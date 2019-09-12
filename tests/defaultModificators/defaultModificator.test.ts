@@ -8,14 +8,13 @@ import FormBuffer from '../../lib';
 const { defaultFormater } = defaultModificator;
 
 describe('defaultModificator', () => {
-    const buffer = new FormBuffer({ preset: { test: {} } });
+    const buffer = new FormBuffer({ preset: { test: { type: String } } });
     function testFormater(value: any) {
         if (!defaultFormater) throw new Error('Formater undefined');
         return defaultFormater(null, value, buffer, formBufferSymbols);
     }
-    it('Should have name default and global: false and formater', () => {
+    it('Should have name default and formater', () => {
         assert.equal(defaultModificator.name, 'default');
-        assert.equal(defaultModificator.canBeGlobal, false);
         assert.exists(defaultFormater);
         assert.isFunction(defaultFormater);
     });

@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 describe('typeModificator', () => {
-    const buffer = new FormBuffer({ preset: { test: {} } });
+    const buffer = new FormBuffer({ preset: { test: { type: String } } });
     function testFormater(options: any, value?: any) {
         if (!typeModificator.defaultFormater) throw new Error('defaultFormater undefined');
         return typeModificator.defaultFormater(value, options, buffer, formBufferSymbols);
@@ -33,9 +33,8 @@ describe('typeModificator', () => {
         if (!typeModificator.outFormater) throw new Error('outFormater undefined');
         return typeModificator.outFormater(value, options, buffer, formBufferSymbols);
     }
-    it('Should have name default and global: false and formater', () => {
+    it('Should have name default and formater', () => {
         assert.equal(typeModificator.name, 'type');
-        assert.equal(typeModificator.canBeGlobal, false);
         assert.exists(typeModificator.defaultFormater);
         assert.isFunction(typeModificator.defaultFormater);
     });
@@ -180,16 +179,19 @@ describe('typeModificator', () => {
                 const result = testFormater({ type: FormBuffer, options: testConfig });
 
                 assert.instanceOf(result, FormBuffer);
-                assert.isFalse(clearFake.calledOnce);
+                assert.isTrue(clearFake.calledOnce);
             });
 
             it('Should return cleared data from formBuffer', () => {
                 const clearFake = sinon.fake();
+                const newBuffer = new FormBuffer(testConfig);
 
                 sinon.replace(FormBuffer.prototype, 'clear', clearFake);
-                testFormater(FormBuffer, new FormBuffer(testConfig));
+
+                const result = testFormater(FormBuffer, newBuffer);
 
                 assert.isTrue(clearFake.calledOnce);
+                assert.strictEqual(result, newBuffer);
             });
 
             it('Should throw error on unacceptable type', () => {

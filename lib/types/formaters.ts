@@ -56,7 +56,7 @@ export type outFormater<T, M extends Modificators = Modificators> = (
     ) => T;
 
 export type defaultFormater<T, M extends Modificators = Modificators> = (
-        oldValue: T | null,
+        oldValue: T,
         formBuffer: FormBuffer<any, M> | FormBufferExtended<any, M>,
         symbols: SymbolsType,
     ) => T;

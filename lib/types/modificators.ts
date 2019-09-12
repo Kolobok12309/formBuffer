@@ -25,7 +25,6 @@ export type ModificatorsNames<M extends Modificators | unknown> =
 
 export interface IModificator<M extends Modificators, N extends ModificatorsNames<M> | unknown = unknown> {
     name: N extends ModificatorsNames<M> ? N : ModificatorsNames<M>;
-    canBeGlobal: boolean;
 
     inFormater?: ModificatorInFormater<M, N>;
     outFormater?: ModificatorOutFormater<M, N>;
