@@ -11,10 +11,15 @@
         "dev": "cross-env NODE_ENV=development webpack-dev-server",
         "test": "cross-env NODE_ENV=test mochapack --glob '*.test.ts' tests --recursive"
     },
-    "repository": {
-        "type": "git",
-        "url": "git://https://github.com/Kolobok12309/formBuffer.git"
-    },
+    "homepage": "https://github.com/Kolobok12309/formBuffer",
+    "repository": "github:Kolobok12309/formBuffer",
+    "keywords": [
+        "form",
+        "forms",
+        "web",
+        "buffer",
+        "formbuffer"
+    ],
     "author": "kolobok12309",
     "license": "MIT",
     "devDependencies": {
