@@ -1,6 +1,6 @@
 {
     "name": "form-buffer",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Help class for working with forms in web",
     "main": "dist/index.js",
     "module": "dist/index.js",
