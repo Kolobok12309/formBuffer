@@ -3,13 +3,12 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-
-const babelOptions = {
-
-};
+const babelOptions = {};
 
 const nowEnv = process.env.NODE_ENV || 'delelopment';
 const isProd = nowEnv === 'production';
+const isCoverage = process.env.NODE_ENV === 'coverage';
+const isTest = isCoverage || process.env.NODE_ENV === 'test';
 
 let config = {
     mode: isProd ? 'production' : 'development',
@@ -19,10 +18,12 @@ let config = {
         path: path.resolve(__dirname, 'dist'),
         library: 'FormBuffer',
         libraryTarget: 'umd',
+        devtoolModuleFilenameTemplate: '[absolute-resource-path]',
+        devtoolFallbackModuleFilenameTemplate: '[absolute-resource-path]?[hash]',
     },
     devtool: 'inline-source-map',
     resolve: {
-        extensions: [".ts", ".js"],
+        extensions: ['.ts', '.js'],
         alias: {
             '@': path.resolve(__dirname, './lib'),
         },
@@ -34,6 +35,24 @@ let config = {
     },
     module: {
         rules: [
+            ...(isCoverage
+                ? [
+                      {
+                          test: /\.ts$/,
+                          include: path.resolve(__dirname, './lib/'),
+                          exclude: /node_modules/,
+                          enforce: 'post',
+                          use: [
+                              {
+                                  loader: 'istanbul-instrumenter-loader',
+                                  options: {
+                                      esModules: true,
+                                  },
+                              },
+                          ],
+                      },
+                  ]
+                : []),
             {
                 test: /\.js$/,
                 exclude: /node_modules/,
@@ -41,8 +60,8 @@ let config = {
                     {
                         loader: 'babel-loader',
                         options: babelOptions,
-                    }
-                ]
+                    },
+                ],
             },
             {
                 test: /\.tsx?$/,
@@ -54,28 +73,25 @@ let config = {
                     },
                     {
                         loader: 'ts-loader',
-                    }
-                ]
-            }
-        ]
+                    },
+                ],
+            },
+        ],
     },
-    plugins: isProd ? [
-        // new BundleAnalyzerPlugin(),
-        new CleanWebpackPlugin(),
-    ] : [
-        new HtmlWebpackPlugin()
-    ],
+    plugins: isProd
+        ? [
+              // new BundleAnalyzerPlugin(),
+              new CleanWebpackPlugin(),
+          ]
+        : [new HtmlWebpackPlugin()],
 };
 
-if (nowEnv === 'test') {
+if (isTest) {
     config = Object.assign(config, {
         mode: 'development',
         target: 'node',
-        devtool: 'inline-cheap-source-map',
-        output: {
-            devtoolModuleFilenameTemplate: '[absolute-resource-path]'
-        }
-    })
+        devtool: 'inline-cheap-module-source-map',
+    });
 }
 
 module.exports = config;
